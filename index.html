@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Pet v1</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="app">
+
+    <!-- ペット選択 -->
+    <select id="pet-select">
+      <option value="usako">うさこ（白うさぎ）</option>
+      <option value="kuro">クロ（黒うさぎ）</option>
+      <option value="taro">タロ（パピヨン）</option>
+    </select>
+
+    <!-- メッセージ -->
+    <div id="message">こんにちは！</div>
+
+    <!-- ペット表示エリア -->
+    <div id="pet-container">
+      <img id="pet-image" class="pet-media" src="" alt="pet">
+      <video id="pet-video" class="pet-media hidden" playsinline></video>
+    </div>
+
+    <!-- カメラ映像（非表示） -->
+    <video id="webcam" autoplay playsinline muted class="hidden"></video>
+
+    <!-- 鳴き声 -->
+    <audio id="pet-sound"></audio>
+
+  </div>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>
