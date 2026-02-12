@@ -1,39 +1,48 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Pet v1</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pet-app-v1</title>
 
+  <!-- ============================= -->
+  <!-- ★ FaceMesh（旧 MediaPipe）CDN -->
+  <!-- ============================= -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+
+  <!-- スタイル -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
   <div id="app">
+    <h1>Pet App v1</h1>
 
     <!-- ペット選択 -->
     <select id="pet-select">
-      <option value="usako">うさこ（白うさぎ）</option>
-      <option value="kuro">クロ（黒うさぎ）</option>
-      <option value="taro">タロ（パピヨン）</option>
+      <option value="usako">うさこ</option>
+      <option value="kuro">クロ</option>
+      <option value="taro">タロ</option>
     </select>
 
-    <!-- メッセージ -->
+    <!-- メッセージ表示 -->
     <div id="message">こんにちは！</div>
 
-    <!-- ペット表示エリア -->
+    <!-- ペット表示領域 -->
     <div id="pet-container">
-      <img id="pet-image" class="pet-media" src="" alt="pet">
-      <video id="pet-video" class="pet-media hidden" playsinline></video>
+      <img id="pet-image" src="" alt="pet" />
+      <video id="pet-video" class="hidden" playsinline></video>
     </div>
 
-    <!-- カメラ映像（非表示） -->
-    <video id="webcam" autoplay playsinline muted class="hidden"></video>
+    <!-- カメラ映像（FaceMesh用） -->
+    <video id="webcam" autoplay playsinline style="display:none;"></video>
 
     <!-- 鳴き声 -->
     <audio id="pet-sound"></audio>
-
   </div>
 
-  <script type="module" src="script.js"></script>
+  <!-- メインスクリプト -->
+  <script src="script.js"></script>
 </body>
 </html>
