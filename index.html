@@ -34,8 +34,17 @@
       <video id="pet-video" class="hidden" playsinline></video>
     </div>
 
-    <!-- カメラ映像（FaceMesh用） -->
-    <video id="webcam" autoplay playsinline style="display:none;"></video>
+    <!-- ============================= -->
+    <!-- ★ FaceMesh用のカメラ映像（display:none は禁止） -->
+    <!-- ============================= -->
+    <video id="webcam" autoplay playsinline style="
+      position: fixed;
+      opacity: 0;
+      pointer-events: none;
+      width: 1px;
+      height: 1px;
+      z-index: -1;
+    "></video>
 
     <!-- 鳴き声 -->
     <audio id="pet-sound"></audio>
