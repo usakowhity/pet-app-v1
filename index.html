@@ -5,9 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>pet-app-v1</title>
 
-  <!-- ============================= -->
-  <!-- ★ FaceMesh（旧 MediaPipe）CDN -->
-  <!-- ============================= -->
+  <!-- FaceMesh（旧 MediaPipe） -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 
@@ -18,25 +16,21 @@
   <div id="app">
     <h1>Pet App v1</h1>
 
-    <!-- ペット選択 -->
     <select id="pet-select">
       <option value="usako">うさこ</option>
       <option value="kuro">クロ</option>
       <option value="taro">タロ</option>
     </select>
 
-    <!-- メッセージ表示 -->
     <div id="message">こんにちは！</div>
 
-    <!-- ペット表示領域 -->
     <div id="pet-container">
-      <img id="pet-image" src="" alt="pet" />
-      <video id="pet-video" class="hidden" playsinline></video>
+      <!-- ★ ここを修正：pet-media を追加 -->
+      <img id="pet-image" class="pet-media" src="" alt="pet" />
+      <video id="pet-video" class="pet-media hidden" playsinline></video>
     </div>
 
-    <!-- ============================= -->
-    <!-- ★ FaceMesh用のカメラ映像（display:none は禁止） -->
-    <!-- ============================= -->
+    <!-- FaceMesh用カメラ -->
     <video id="webcam" autoplay playsinline style="
       position: fixed;
       opacity: 0;
@@ -46,13 +40,9 @@
       z-index: -1;
     "></video>
 
-    <!-- 鳴き声 -->
     <audio id="pet-sound"></audio>
   </div>
 
-  <!-- ============================= -->
-  <!-- ★ script.js は必ず最後に読み込む -->
-  <!-- ============================= -->
   <script src="script.js"></script>
 </body>
 </html>
