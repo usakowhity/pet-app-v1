@@ -1,18 +1,23 @@
 // ================================
-//  pet-app-v1 改良版 script.js
+//  pet-app-v1 script.js 改良版3
+//  ・笑顔検出強化（smile + jawOpen）
+//  ・音声認識強化（部分一致・途中結果）
+//  ・名前呼びでペット切替 + 喜び
+//  ・褒め言葉で喜び
+//  ・クールダウン短縮で反応高速化
 // ================================
 
-import { FilesetResolver, FaceLandmarker } from 
+import { FilesetResolver, FaceLandmarker } from
   "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.mjs";
 
 // --- DOM要素 ---
-const petSelect = document.getElementById("pet-select");
-const imgElem = document.getElementById("pet-image");
-const vidElem = document.getElementById("pet-video");
-const msgElem = document.getElementById("message");
-const webcam = document.getElementById("webcam");
-const petSound = document.getElementById("pet-sound");
-const petContainer = document.getElementById("pet-container");
+const petSelect   = document.getElementById("pet-select");
+const imgElem     = document.getElementById("pet-image");
+const vidElem     = document.getElementById("pet-video");
+const msgElem     = document.getElementById("message");
+const webcam      = document.getElementById("webcam");
+const petSound    = document.getElementById("pet-sound");
+const petContainer= document.getElementById("pet-container");
 
 // --- ペットデータ ---
 const PET_DATA = {
@@ -23,7 +28,7 @@ const PET_DATA = {
   },
   kuro: {
     n1: "assets/kuro/n1.png",
-    p2: "assets/kuro/p2.mp4",   // ここは実ファイル名と完全一致させてね
+    p2: "assets/kuro/p2.mp4",   // 実ファイル名に合わせて変更可
     sound: "assets/sounds/rabbit.mp3"
   },
   taro: {
@@ -33,14 +38,16 @@ const PET_DATA = {
   }
 };
 
-let currentPet = "usako";
-let currentState = "n1";
+let currentPet     = "usako";
+let currentState   = "n1";
 let faceLandmarker = null;
-let lastVideoTime = -1;
-let lastJoyTime = 0;          // 連続発火防止用
-const JOY_COOLDOWN_MS = 2000; // 2秒クールダウン
+let lastVideoTime  = -1;
+let lastJoyTime    = 0;
+const JOY_COOLDOWN_MS = 800; // 反応を速くするため短め
 
-// --- 初期化 ---
+// ================================
+// 初期化
+// ================================
 window.addEventListener("DOMContentLoaded", async () => {
   console.log("[INIT] DOMContentLoaded");
   loadN1();
@@ -52,7 +59,9 @@ window.addEventListener("DOMContentLoaded", async () => {
   msgElem.innerText = "こんにちは！";
 });
 
-// --- N1画像表示 ---
+// ================================
+// 状態表示
+// ================================
 function loadN1() {
   const data = PET_DATA[currentPet];
   console.log("[STATE] loadN1 for", currentPet, data?.n1);
@@ -69,7 +78,7 @@ function loadN1() {
   currentState = "n1";
 }
 
-// --- p2発火（動画終了後 +3秒で n1） ---
+// 喜び状態（p2）へ
 function triggerP2(source = "unknown") {
   const now = Date.now();
   if (currentState === "p2") {
@@ -121,14 +130,18 @@ function triggerP2(source = "unknown") {
   };
 }
 
-// --- ペット選択 ---
+// ================================
+// ペット選択（セレクトボックス）
+// ================================
 petSelect.addEventListener("change", () => {
   currentPet = petSelect.value;
   console.log("[PET] changed to", currentPet);
   loadN1();
 });
 
-// --- 撫でる検知 ---
+// ================================
+// 撫でる検知
+// ================================
 function setupTouchEvents() {
   console.log("[INIT] setupTouchEvents");
   const handle = () => triggerP2("touch");
@@ -138,7 +151,9 @@ function setupTouchEvents() {
   });
 }
 
-// --- 音声認識（常時オン & interimResults true） ---
+// ================================
+// 音声認識（Web Speech API）
+// ================================
 function setupSpeechRecognition() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
@@ -156,7 +171,20 @@ function setupSpeechRecognition() {
     const result = event.results[event.results.length - 1];
     const text = result[0].transcript.trim();
     console.log("[SR] result:", text, "final:", result.isFinal);
-    processSpeech(text);
+
+    const clean = normalize(text);
+
+    // 名前呼び → ペット切替 + 喜び
+    if (detectPetName(clean)) return;
+
+    // 褒め言葉 → 喜び
+    if (detectPraise(clean)) return;
+
+    // 途中結果でも反応させたい場合（より鋭く）
+    if (!result.isFinal) {
+      if (detectPetName(clean)) return;
+      if (detectPraise(clean)) return;
+    }
   };
 
   recognition.onerror = (e) => {
@@ -176,25 +204,81 @@ function setupSpeechRecognition() {
   }
 }
 
-// 固定ワード
-const TRIGGER_WORDS = [
-  "かわいい", "可愛い", "いい子", "大好き", "好き", "おいで",
-  "タロ", "たろ", "タロウ",
-  "うさこ", "ウサコ",
-  "クロ", "くろ"
-];
-
-function processSpeech(text) {
-  const clean = text.replace(/\s/g, "");
-  console.log("[SR] processing:", clean);
-
-  if (TRIGGER_WORDS.some(w => clean.includes(w))) {
-    console.log("[SR] trigger word detected");
-    triggerP2("speech");
-  }
+// 正規化（簡易）
+function normalize(text) {
+  return text
+    .replace(/\s/g, "")
+    .replace(/[。、]/g, "")
+    .toLowerCase();
 }
 
-// --- MediaPipe Vision セットアップ ---
+// 名前呼び検出（Python版ロジック移植）
+function detectPetName(text) {
+  const t = text.toLowerCase();
+
+  // Usako
+  if (
+    text.includes("うさ") || text.includes("さこ") ||
+    text.includes("ウサ") || text.includes("うさちゃん") ||
+    text.includes("うーちゃん") ||
+    t.includes("usako") || t.includes("usa") || t.includes("usaco")
+  ) {
+    console.log("[Logic] 名前呼び: usako");
+    currentPet = "usako";
+    petSelect.value = "usako";
+    loadN1();
+    triggerP2("name-usako");
+    return true;
+  }
+
+  // Kuro
+  if (
+    text.includes("くろ") || text.includes("クロ") ||
+    text.includes("くー") || t.includes("kuro")
+  ) {
+    console.log("[Logic] 名前呼び: kuro");
+    currentPet = "kuro";
+    petSelect.value = "kuro";
+    loadN1();
+    triggerP2("name-kuro");
+    return true;
+  }
+
+  // Taro
+  if (
+    text.includes("たろ") || text.includes("タロ") ||
+    text.includes("たー") || t.includes("taro")
+  ) {
+    console.log("[Logic] 名前呼び: taro");
+    currentPet = "taro";
+    petSelect.value = "taro";
+    loadN1();
+    triggerP2("name-taro");
+    return true;
+  }
+
+  return false;
+}
+
+// 褒め言葉検出（Python版ロジック移植）
+function detectPraise(text) {
+  if (
+    text.includes("かわいい") || text.includes("可愛い") ||
+    text.includes("おりこう") || text.includes("お利口") ||
+    text.includes("よし") ||
+    text.includes("いいこ") || text.includes("いい子") ||
+    text.includes("すごいね") || text.includes("えらいね")
+  ) {
+    console.log("[Logic] 褒め言葉検出 → p2");
+    triggerP2("praise");
+    return true;
+  }
+  return false;
+}
+
+// ================================
+// MediaPipe Vision（笑顔検出）
+// ================================
 async function setupVision() {
   console.log("[INIT] setupVision");
   const vision = await FilesetResolver.forVisionTasks(
@@ -247,17 +331,18 @@ function setupSmileDetectionLoop() {
   loop();
 }
 
-// --- 笑顔検知（閾値 0.30 に調整） ---
+// 笑顔検出（smile + jawOpen の複合判定）
 function detectSmile(shapes) {
-  const left = shapes.find(s => s.categoryName === "mouthSmileLeft")?.score || 0;
+  const left  = shapes.find(s => s.categoryName === "mouthSmileLeft")?.score  || 0;
   const right = shapes.find(s => s.categoryName === "mouthSmileRight")?.score || 0;
+  const jaw   = shapes.find(s => s.categoryName === "jawOpen")?.score         || 0;
+
   const smile = (left + right) / 2;
 
-  // デバッグ用ログ（必要ならコメントアウト）
-  // console.log("[SMILE] score:", smile.toFixed(3));
+  // console.log("[SMILE] smile:", smile.toFixed(3), "jaw:", jaw.toFixed(3));
 
-  if (smile > 0.30) {
-    console.log("[SMILE] trigger, score:", smile);
+  if (smile > 0.22 || jaw > 0.35) {
+    console.log("[SMILE] trigger, smile:", smile, "jaw:", jaw);
     triggerP2("smile");
   }
 }
